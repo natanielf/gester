@@ -1,53 +1,77 @@
 #!/bin/bash
 
-source=$1
-target=$2
+usage() {
+    echo "Usage: ./gester.sh [SOURCE] [TARGET]"
+    echo "Ingest files from a source directory to a target directory."
+}
 
 configure () {
     # Ask for source location if not already given
-    if [ -z "$source" ]
-    then
-        echo "Choose the source location (where your media is right now)"
-        source=$(dir -d "/run/media/$USER/" | gum choose)
-    fi
+    echo "Choose the source location (where your media is right now)"
+    source=$(gum input --placeholder="path/to/media")
+    while [ ! -d "$source" ]
+    do
+        echo "$source is not a valid directory."
+        source=$(gum input --placeholder="path/to/media" --value="$source")
+    done
 
     echo "Source: $source"
 
     # Ask for target location if not already given
-    if [ -z "$target" ]
-    then
-        echo "Choose the target location (where you want your media copied to)"
-        target=$(dir -d "$HOME/" | gum choose)
-    fi
+    target=$(gum input --placeholder="path/to/target")
+    while [ ! -d "$target" ]
+    do
+        echo "$source is not a valid directory."
+        source=$(gum input --placeholder="path/to/target" --value="$target")
+    done
+
+    date_format="$(gum choose "YYYY-MM-DD" "YYYY/MM/DD" "YYYY/MM")"
+
+    case $date_format in
+        "YYYY-MM-DD")
+            date_format="%Y-%m-%d"
+        ;;
+        "YYYY/MM/DD")
+            date_format="%Y/%m/%d"
+        ;;
+        "YYYY/MM")
+            date_format="%Y/%m"
+        ;;
+    esac
 
     echo "Target: $target"
+
+    ingest $date_format
 }
 
 ingest () {
-    # Would be nice to use something like this
-    # instead of a for loop, but because of the
-    # subdir creation, it may not be any better
-    # find "$source" -exec cp -r {} "$target" \;
-
+    # Count the number of files ingested
     n=0
+
+    # Set the default date format if none is specified
+    date_format=$1
+    if [ -z "$date_format" ]
+    then
+        date_format="%Y-%m-%d"
+    fi
 
     echo "Ingesting $(basename "$source")/ to $(basename "$target")/"
     # Copy all files from source to target location
     for file in "$source"*
     do
         # Get the creation date of the media
-        date=$(exiftool -p '${CreateDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
+        date=$(exiftool -S -CreateDate -d "$date_format" -S "$file" 2>/dev/null)
 
         # Use modification date as a fallback
         if [ -z "$date" ]
         then
-            date=$(exiftool -p '${FileModifyDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
+            date=$(exiftool -S -FileModifyDate -d "$date_format" -S "$file" 2>/dev/null)
         fi
 
         # If no modification date is available, use the date of last access
         if [ -z "$date" ]
         then
-            date=$(exiftool -p '${FileAccessDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
+            date=$(exiftool -S -FileAccessDate -d "$date_format" -S "$file" 2>/dev/null)
         fi
 
         target_subdir="$target$date"
@@ -55,7 +79,7 @@ ingest () {
         # EXIF creation date if it does not already exist
         if [ ! -d "$target_subdir" ]
         then
-            mkdir "$target_subdir"
+            mkdir -p "$target_subdir"
             echo "Created directory $date/"
         fi
         # Copy file to target subdirectory
@@ -65,6 +89,9 @@ ingest () {
     done
     echo "Ingest complete. $n files copied."
 }
+
+source=$1
+target=$2
 
 if [ -n "$source" ] && [ -n "$target" ]
 then
