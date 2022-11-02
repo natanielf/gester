@@ -29,19 +29,25 @@ ingest () {
     # subdir creation, it may not be any better
     # find "$source" -exec cp -r {} "$target" \;
 
-    echo "Copying files from $source to $target"
+    n=0
+
+    echo "Ingesting $(basename "$source")/ to $(basename "$target")/"
     # Copy all files from source to target location
     for file in "$source"*
     do
-        echo "$file"
-        # Get the creation date of the media, use modification date
-        # as a fallback
-        date=$(exiftool -p '${CreateDate#;DateFmt("%Y-%m-%d")}' "$file")
+        # Get the creation date of the media
+        date=$(exiftool -p '${CreateDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
 
-        if [[ $date == "W*" ]]
+        # Use modification date as a fallback
+        if [ -z "$date" ]
         then
-            date=$(exiftool -p '${FileModifyDate#;DateFmt("%Y-%m-%d")}' "$file")
-            echo "Using modification date"
+            date=$(exiftool -p '${FileModifyDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
+        fi
+
+        # If no modification date is available, use the date of last access
+        if [ -z "$date" ]
+        then
+            date=$(exiftool -p '${FileAccessDate#;DateFmt("%Y-%m-%d")}' "$file" 2>/dev/null)
         fi
 
         target_subdir="$target$date"
@@ -50,12 +56,14 @@ ingest () {
         if [ ! -d "$target_subdir" ]
         then
             mkdir "$target_subdir"
-            echo "Created $target_subdir"
+            echo "Created directory $date/"
         fi
         # Copy file to target subdirectory
         cp "$file" "$target_subdir"
-        echo "Copied $file to $target_subdir"
+        ((n++))
+        echo "Copied $(basename "$file") to $(basename "$target_subdir")/"
     done
+    echo "Ingest complete. $n files copied."
 }
 
 if [ -n "$source" ] && [ -n "$target" ]
