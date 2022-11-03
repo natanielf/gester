@@ -7,17 +7,18 @@ usage() {
 
 configure () {
     # Ask for source location if not already given
-    echo "Choose the source location (where your media is right now)"
-    source=$(gum input --placeholder="path/to/media")
+    echo "Choose source location (where your media is right now)"
+    source=$(gum input --placeholder="path/to/source")
     while [ ! -d "$source" ]
     do
         echo "$source is not a valid directory."
-        source=$(gum input --placeholder="path/to/media" --value="$source")
+        source=$(gum input --placeholder="path/to/source" --value="$source")
     done
 
-    echo "Source: $source"
+    echo "Source location: $source"
 
     # Ask for target location if not already given
+    echo "Choose target location (where you want your media copied)"
     target=$(gum input --placeholder="path/to/target")
     while [ ! -d "$target" ]
     do
@@ -25,7 +26,10 @@ configure () {
         source=$(gum input --placeholder="path/to/target" --value="$target")
     done
 
-    date_format="$(gum choose "YYYY-MM-DD" "YYYY/MM/DD" "YYYY/MM")"
+    echo "Target location: $target"
+
+    echo "Choose a date format for subdirectories:"
+    date_format="$(gum choose "YYYY-MM-DD (default)" "YYYY/MM/DD" "YYYY/MM")"
 
     case $date_format in
         "YYYY-MM-DD")
@@ -38,8 +42,6 @@ configure () {
             date_format="%Y/%m"
         ;;
     esac
-
-    echo "Target: $target"
 
     ingest $date_format
 }
