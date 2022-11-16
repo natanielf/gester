@@ -7,43 +7,47 @@ usage() {
 
 configure () {
     # Ask for source location if not already given
-    echo "Choose source location (where your media is right now)"
-    source=$(gum input --placeholder="path/to/source")
+    echo "Enter source location as '/path/to/source' (where your media is right now)"
+    read -r source
     while [ ! -d "$source" ]
     do
-        echo "$source is not a valid directory."
-        source=$(gum input --placeholder="path/to/source" --value="$source")
+        echo "'$source' is not a valid directory."
+        read -r source  
     done
 
     echo "Source location: $source"
 
     # Ask for target location if not already given
-    echo "Choose target location (where you want your media copied)"
-    target=$(gum input --placeholder="path/to/target")
+    echo "Enter target location as '/path/to/target' (where you want your media copied)"
+    read -r target
     while [ ! -d "$target" ]
     do
-        echo "$source is not a valid directory."
-        source=$(gum input --placeholder="path/to/target" --value="$target")
+        echo "'$target' is not a valid directory."
+        read -r target
     done
 
     echo "Target location: $target"
 
     echo "Choose a date format for subdirectories:"
-    date_format="$(gum choose "YYYY-MM-DD (default)" "YYYY/MM/DD" "YYYY/MM")"
+    select date_format in "YYYY-MM-DD (default)" "YYYY/MM/DD" "YYYY/MM"
+    do
+        case "$date_format" in
+            "YYYY-MM-DD (default)")
+                date_format="%Y-%m-%d"
+                break
+            ;;
+            "YYYY/MM/DD")
+                date_format="%Y/%m/%d"
+                break
+            ;;
+            "YYYY/MM")
+                date_format="%Y/%m"
+                break
+            ;;
+        esac
+    done
 
-    case $date_format in
-        "YYYY-MM-DD")
-            date_format="%Y-%m-%d"
-        ;;
-        "YYYY/MM/DD")
-            date_format="%Y/%m/%d"
-        ;;
-        "YYYY/MM")
-            date_format="%Y/%m"
-        ;;
-    esac
-
-    ingest $date_format
+    ingest "$date_format"
 }
 
 ingest () {
@@ -51,7 +55,7 @@ ingest () {
     n=0
 
     # Set the default date format if none is specified
-    date_format=$1
+    date_format="$1"
     if [ -z "$date_format" ]
     then
         date_format="%Y-%m-%d"
@@ -86,8 +90,8 @@ ingest () {
         fi
         # Copy file to target subdirectory
         cp "$file" "$target_subdir"
-        ((n++))
-        echo "Copied $(basename "$file") to $(basename "$target_subdir")/"
+        n=$((n+1))
+        echo "Copied $(basename "$file") to $date/"
     done
     echo "Ingest complete. $n files copied."
 }
