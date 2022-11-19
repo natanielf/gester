@@ -2,104 +2,111 @@
 
 usage() {
     echo "Usage: ./gester.sh [SOURCE] [TARGET]"
-    echo "Ingest files from a source directory to a target directory."
+    echo "Ingest media files from the source directory to the target directory."
 }
 
 configure () {
     # Ask for source location if not already given
     echo "Enter source location as '/path/to/source' (where your media is right now)"
-    read -r source
-    while [ ! -d "$source" ]
+    read -r SOURCE
+    while [ ! -d "$SOURCE" ]
     do
-        echo "'$source' is not a valid directory."
-        read -r source  
+        echo "'$SOURCE' is not a valid directory."
+        read -r SOURCE  
     done
 
-    echo "Source location: $source"
+    echo "Source location: $SOURCE"
 
     # Ask for target location if not already given
     echo "Enter target location as '/path/to/target' (where you want your media copied)"
-    read -r target
-    while [ ! -d "$target" ]
+    read -r TARGET
+    while [ ! -d "$TARGET" ]
     do
-        echo "'$target' is not a valid directory."
-        read -r target
+        echo "'$TARGET' is not a valid directory."
+        read -r TARGET
     done
 
-    echo "Target location: $target"
+    echo "Target location: $TARGET"
 
     echo "Choose a date format for subdirectories:"
-    select date_format in "YYYY-MM-DD (default)" "YYYY/MM/DD" "YYYY/MM"
+    select DATE_FORMAT in "YYYY-MM-DD (default)" "YYYY/MM/DD" "YYYY/MM"
     do
-        case "$date_format" in
-            "YYYY-MM-DD (default)")
-                date_format="%Y-%m-%d"
-                break
-            ;;
+        case "$DATE_FORMAT" in
             "YYYY/MM/DD")
-                date_format="%Y/%m/%d"
+                DATE_FORMAT="%Y/%m/%d"
                 break
             ;;
             "YYYY/MM")
-                date_format="%Y/%m"
+                DATE_FORMAT="%Y/%m"
+                break
+            ;;
+            "YYYY-MM-DD (default)" | *)
+                DATE_FORMAT="%Y-%m-%d"
                 break
             ;;
         esac
     done
 
-    ingest "$date_format"
+    ingest "$DATE_FORMAT"
 }
 
 ingest () {
     # Count the number of files ingested
-    n=0
+    N=0
 
     # Set the default date format if none is specified
-    date_format="$1"
-    if [ -z "$date_format" ]
+    DATE_FORMAT="$1"
+    if [ -z "$DATE_FORMAT" ]
     then
-        date_format="%Y-%m-%d"
+        DATE_FORMAT="%Y-%m-%d"
     fi
 
-    echo "Ingesting $(basename "$source")/ to $(basename "$target")/"
+    echo "Ingesting $(basename "$SOURCE")/ to $(basename "$TARGET")/"
     # Copy all files from source to target location
-    for file in "$source"*
+    for FILE in "$SOURCE"*
     do
         # Get the creation date of the media
-        date=$(exiftool -S -CreateDate -d "$date_format" -S "$file" 2>/dev/null)
+        DATE=$(exiftool -S -CreateDate -d "$DATE_FORMAT" -S "$FILE" 2>/dev/null)
 
         # Use modification date as a fallback
-        if [ -z "$date" ]
+        if [ -z "$DATE" ]
         then
-            date=$(exiftool -S -FileModifyDate -d "$date_format" -S "$file" 2>/dev/null)
+            DATE=$(exiftool -S -FileModifyDate -d "$DATE_FORMAT" -S "$FILE" 2>/dev/null)
         fi
 
         # If no modification date is available, use the date of last access
-        if [ -z "$date" ]
+        if [ -z "$DATE" ]
         then
-            date=$(exiftool -S -FileAccessDate -d "$date_format" -S "$file" 2>/dev/null)
+            DATE=$(exiftool -S -FileAccessDate -d "$DATE_FORMAT" -S "$FILE" 2>/dev/null)
         fi
 
-        target_subdir="$target$date"
-        # Create subdirectory inside target location based on file's
-        # EXIF creation date if it does not already exist
-        if [ ! -d "$target_subdir" ]
+        TARGET_SUBDIR="$TARGET$DATE"
+        # If the directory does not already exist, create a subdirectory
+        # inside target location based on file's EXIF data
+        if [ ! -d "$TARGET_SUBDIR" ]
         then
-            mkdir -p "$target_subdir"
-            echo "Created directory $date/"
+            mkdir -p "$TARGET_SUBDIR"
+            echo "Created directory: '$DATE/'"
         fi
         # Copy file to target subdirectory
-        cp "$file" "$target_subdir"
-        n=$((n+1))
-        echo "Copied $(basename "$file") to $date/"
+        cp "$FILE" "$TARGET_SUBDIR"
+        # Check if the file has actually been copied
+        FILE_BASENAME="$(basename "$FILE")"
+        if [ -z "$(diff -q "$FILE" "$TARGET_SUBDIR/$FILE_BASENAME" 2>/dev/null)" ]
+        then
+            echo "Copied '$FILE_BASENAME' to '$DATE/'"
+            N=$((N+1))
+        else
+            echo "Error: '$FILE_BASENAME' was not ingested."
+        fi
     done
-    echo "Ingest complete. $n files copied."
+    echo "Ingest complete. $N files copied."
 }
 
-source=$1
-target=$2
+SOURCE=$1
+TARGET=$2
 
-if [ -n "$source" ] && [ -n "$target" ]
+if [ -n "$SOURCE" ] && [ -n "$TARGET" ]
 then
     ingest
 else
