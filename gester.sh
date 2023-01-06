@@ -41,6 +41,9 @@ ingest() {
         "YYYY/MM")
             DATE_FORMAT="%Y/%m"
         ;;
+        "YYYYMMDD" )
+            DATE_FORMAT="%Y%m%d"
+        ;;
         "YYYY-MM-DD" | *)
             DATE_FORMAT="%Y-%m-%d"
         ;;
