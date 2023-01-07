@@ -21,6 +21,7 @@ Examples:
 # Features
 
 - Supports any media file that contains [EXIF metadata](https://wikipedia.org/wiki/Exif) that can be read by [ExifTool](https://exiftool.org/)
+- Preserves `FileModifyDate` EXIF tag
 - Configurable destination subdirectory formatting
 - Checks for file parity after copying each file to ensure the copy was successful
 

@@ -80,7 +80,7 @@ ingest() {
         fi
 
         # Copy file to target subdirectory
-        cp "$file" "$target_subdir"
+        cp -r --preserve=all "$file" "$target_subdir"
 
         # Check if the file has actually been copied
         file_basename=$(basename "$file")
