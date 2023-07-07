@@ -8,7 +8,7 @@ A shell script for automating media ingest.
 
 Where:
 
-- `SOURCE` is the directory of the source media (such the `DCIM` directory of a camera's SD card).
+- `SOURCE` is the directory of the source media (such as the `DCIM` directory of a camera's SD card).
 - `TARGET` is the directory in which you want to ingest media (where gester will copy media files to).
 - `DATE_FORMAT` is the format of the subdirectories that will be created inside of `TARGET`. `YYYY` is for the year, `MM` is for the month, and `DD` is for the day.
 
