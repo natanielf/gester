@@ -1,41 +1,25 @@
 #!/bin/bash
-# Gester: A shell script for automating media ingest.
+# gester: A shell script for automating media ingest.
 
 usage() {
     echo "Gester: A shell script for automating media ingest."
     echo "Usage: ./gester.sh SOURCE TARGET DATE_FORMAT"
-    echo "date_format Usage: YYYY = year, MM = month, DD = day"
+    echo "DATE_FORMAT Usage: YYYY = year, MM = month, DD = day"
     echo "Example: ./gester.sh /path/to/source /path/to/target YYYY-MM-DD"
 }
 
-configure() {
-    # Ask for source location if not already given
-    echo "Enter source location as '/path/to/source' (where your media is right now)"
-    read -r source
-    while [ ! -d "$source" ]
-    do
-        echo "'$source' is not a valid directory."
-        read -r source  
-    done
-
-    # Ask for target location if not already given
-    echo "Enter target location as '/path/to/target' (where you want your media copied)"
-    read -r target
-    while [ ! -d "$target" ]
-    do
-        echo "'$target' is not a valid directory."
-        read -r target
-    done
-
-    # Ask for the desired date format from a list of preset options
-    echo "Choose a date format for subdirectories:"
-    select date_format in "YYYY-MM-DD" "YYYYMMDD" "YYYY/MM/DD" "YYYY/MM"
-    do
-        ingest
-    done
-}
-
 ingest() {
+    # Ask for a date format selection if one is not supplied
+    if [ -z "$date_format" ]
+    then
+        echo "Choose a date format for subdirectories:"
+        select date_format in "YYYY-MM-DD" "YYYYMMDD" "YYYY/MM/DD" "YYYY/MM"
+        do
+            echo "Chosen date format: '$date_format'"
+            break
+        done
+    fi
+
     # Check for invalid date formats
     if [[ "$date_format" != *"YYYY"* ]] && [[ "$date_format" != *"MM"* ]] && [[ "$date_format" != *"DD"* ]]
     then
@@ -48,7 +32,7 @@ ingest() {
     date_format="${date_format/MM/%m}"
     date_format="${date_format/DD/%d}"
 
-    echo "Ingesting $(basename "$source")/ to $(basename "$target")/"
+    echo "Ingesting '$(basename "$source")/' to '$(basename "$target")/'..."
     # Count the number of files ingested
     n=0
     # Copy all files from source to target location
@@ -80,14 +64,14 @@ ingest() {
         fi
 
         # Copy file to target subdirectory
-        cp -r --preserve=all "$file" "$target_subdir"
+        cp -a "$file" "$target_subdir"
 
         # Check if the file has actually been copied
         file_basename=$(basename "$file")
         diff_check=$(diff -q "$file" "$target_subdir/$file_basename")
         if [ -z "$diff_check" ]
         then
-            echo "Copied '$file_basename' to '$date/'"
+            echo "    Copied '$file_basename' to '$date/'"
             n=$((n+1))
         else
             echo "Error: '$file_basename' was not ingested."
@@ -101,14 +85,26 @@ source=$1
 target=$2
 date_format=$3
 
+# Exit if exiftool is not installed
+if [ -z $(command -v exiftool) ]
+then
+    echo "Error: Package 'exiftool' is not installed."
+    exit 1
+fi
+
+# Print a help message if no media location arguments are specified
+if [ -z "$source" ] && [ -z "$target" ]
+then
+    usage
+    exit 0
+fi
+
+# Check media location argumets
 if [ -d "$source" ] && [ -d "$target" ]
 then
     ingest
-elif [ -z "$source" ] && [ -z "$target" ]
-then
-    configure
 else
-    echo "Error: Invalid directory supplied."
+    echo "Error: Invalid source or target directory."
     usage
     exit 1
 fi
