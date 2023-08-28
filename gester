@@ -32,11 +32,11 @@ ingest() {
     date_format="${date_format/MM/%m}"
     date_format="${date_format/DD/%d}"
 
-    echo "Ingesting '$(basename "$source")/' to '$(basename "$target")/'..."
+    echo "Ingesting '$(basename "$source_dir")/' to '$(basename "$target_dir")/'..."
     # Count the number of files ingested
     n=0
     # Copy all files from source to target location
-    for file in "$source"*
+    for file in "$source_dir"*
     do
         # Get the creation date of the media
         date=$(exiftool -S -CreateDate -d "$date_format" -S "$file")
@@ -53,7 +53,7 @@ ingest() {
             date=$(exiftool -S -FileAccessDate -d "$date_format" -S "$file")
         fi
 
-        target_subdir="$target$date"
+        target_subdir="$target_dir$date"
 
         # If the directory does not already exist, create a subdirectory
         # inside target location based on file's EXIF data
@@ -63,26 +63,24 @@ ingest() {
             echo "Created directory: '$date/'"
         fi
 
-        # Copy file to target subdirectory
-        cp -a "$file" "$target_subdir"
-
-        # Check if the file has actually been copied
+        # Skip the current file if it already exists in the target directory
         file_basename=$(basename "$file")
-        diff_check=$(diff -q "$file" "$target_subdir/$file_basename")
-        if [ -z "$diff_check" ]
+        if [ -f "$target_subdir/$file_basename" ]
         then
+            echo "    File '$file_basename' already exists in '$date/', skipping"
+        else
+            # Copy the file to target subdirectory
+            cp -an "$file" "$target_subdir"
             echo "    Copied '$file_basename' to '$date/'"
             n=$((n+1))
-        else
-            echo "Error: '$file_basename' was not ingested."
-            exit 1
         fi
+
     done
     echo "Ingest complete. $n files copied."
 }
 
-source=$1
-target=$2
+source_dir=$1
+target_dir=$2
 date_format=$3
 
 # Exit if exiftool is not installed
@@ -93,14 +91,14 @@ then
 fi
 
 # Print a help message if no media location arguments are specified
-if [ -z "$source" ] && [ -z "$target" ]
+if [ -z "$source_dir" ] && [ -z "$target_dir" ]
 then
     usage
     exit 0
 fi
 
 # Check media location argumets
-if [ -d "$source" ] && [ -d "$target" ]
+if [ -d "$source_dir" ] && [ -d "$target_dir" ]
 then
     ingest
 else
