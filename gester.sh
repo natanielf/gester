@@ -67,11 +67,11 @@ ingest() {
         file_basename=$(basename "$file")
         if [ -f "$target_subdir/$file_basename" ]
         then
-            echo "    File '$file_basename' already exists in '$date/', skipping"
+            echo "  File '$file_basename' already exists in '$date/', skipping"
         else
             # Copy the file to target subdirectory
             cp -an "$file" "$target_subdir"
-            echo "    Copied '$file_basename' to '$date/'"
+            echo "  Copied '$file_basename' to '$date/'"
             n=$((n+1))
         fi
 
@@ -79,6 +79,7 @@ ingest() {
     echo "Ingest complete. $n files copied."
 }
 
+# Command-line arguments
 source_dir=$1
 target_dir=$2
 date_format=$3

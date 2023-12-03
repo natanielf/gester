@@ -2,17 +2,23 @@
 
 A shell script for automating media ingest.
 
-# Usage
+## Usage
 
-`./gester.sh SOURCE TARGET DATE_FORMAT`
+`./gester.sh SOURCE_DIR TARGET_DIR DATE_FORMAT`
 
 Where:
 
-- `SOURCE` is the directory of the source media (such as the `DCIM` directory of a camera's SD card).
-- `TARGET` is the directory in which you want to ingest media (where gester will copy media files to).
+- `SOURCE_DIR` is the directory of the source media (such as the `DCIM` directory of a camera's SD card).
+- `TARGET_DIR` is the directory in which you want to ingest media (where `gester` will copy media files to).
 - `DATE_FORMAT` is the format of the subdirectories that will be created inside of `TARGET`. `YYYY` is for the year, `MM` is for the month, and `DD` is for the day.
 
-Examples:
+You can add the following to your shell configuration (e.g. `.bashrc`) to use `gester` anywhere:
+
+```sh
+alias gester="/path/to/gester.sh"
+```
+
+### Examples:
 
 - `./gester.sh /path/to/source /path/to/target YYYY-MM-DD`
 - `./gester.sh /path/to/source /path/to/target YYYY/MM/`
@@ -24,6 +30,7 @@ Examples:
 - Preserves `FileModifyDate` EXIF tag
 - Configurable destination subdirectory formatting
 - Checks for file parity after copying each file to ensure the copy was successful
+- Skips files that already exist in the destination directory
 
 # Required Software
 
